@@ -660,7 +660,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         {output.map((line, i) => (
           <div 
             key={i} 
-            className={line.type === 'prompt' ? 'text-[#00ff88]/60' : line.type === 'error' ? 'text-red-400' : 'text-[#00ff88]'}
+            className={`whitespace-pre-wrap ${line.type === 'prompt' ? 'text-[#00ff88]/60' : line.type === 'error' ? 'text-red-400' : 'text-[#00ff88]'}`}
             dangerouslySetInnerHTML={{ __html: line.content }}
           />
         ))}
