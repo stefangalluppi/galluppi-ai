@@ -101,8 +101,6 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isTyping, setIsTyping] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
-  const [idleTimer, setIdleTimer] = useState<NodeJS.Timeout | null>(null);
-  const [idleStage, setIdleStage] = useState(0);
   const [konamiSequence, setKonamiSequence] = useState<string[]>([]);
   
   const inputRef = useRef<HTMLInputElement>(null);
@@ -110,36 +108,6 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   const typingAbortRef = useRef<AbortController | null>(null);
 
   const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-
-  const resetIdleTimer = useCallback(() => {
-    if (idleTimer) clearTimeout(idleTimer);
-    setIdleStage(0);
-    
-    const timer = setTimeout(() => {
-      if (!isTyping) {
-        typeOutput('> Still there?\n', 2);
-        setIdleStage(1);
-        
-        const timer2 = setTimeout(() => {
-          if (!isTyping) {
-            typeOutput('> I can wait.\n', 2);
-            setIdleStage(2);
-          }
-        }, 30000);
-        
-        setIdleTimer(timer2);
-      }
-    }, 30000);
-    
-    setIdleTimer(timer);
-  }, [idleTimer, isTyping]);
-
-  useEffect(() => {
-    resetIdleTimer();
-    return () => {
-      if (idleTimer) clearTimeout(idleTimer);
-    };
-  }, []);
 
   const scrollToBottom = () => {
     if (outputRef.current) {
@@ -258,12 +226,10 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   };
 
   const executeCommand = async (cmd: string) => {
-    resetIdleTimer();
-    
     const trimmedCmd = cmd.trim();
     if (!trimmedCmd) return;
 
-    setOutput(prev => [...prev, { type: 'prompt', content: `gilfoyle@galluppi.ai:${currentPath === '/' ? '~' : currentPath}$ ${trimmedCmd}` }]);
+    setOutput(prev => [...prev, { type: 'prompt', content: `<span style="color: #6366f1">gilfoyle@galluppi.ai</span><span style="color: #4a4a5c">:${currentPath === '/' ? '~' : currentPath}</span><span style="color: #00ff88">$</span> ${trimmedCmd}` }]);
     setCommandHistory(prev => [...prev.slice(-49), trimmedCmd]);
     
     const parts = trimmedCmd.split(/\s+/);
@@ -284,9 +250,9 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
         Object.entries(dir).forEach(([name, entry]) => {
           if (name.startsWith('.') && !showHidden) return;
           if (entry.type === 'dir') {
-            output += `<span class="text-cyan-400">${name}/</span>  `;
+            output += `<span style="color: #6366f1">${name}/</span>  `;
           } else {
-            output += `<span class="text-green-400">${name}</span>  `;
+            output += `<span style="color: #c8c8d0">${name}</span>  `;
           }
         });
         
@@ -645,7 +611,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
 
   return (
     <div 
-      className="fixed inset-0 bg-[#0a0a0a] overflow-hidden flex flex-col font-mono text-[#00ff88]"
+      className="w-full h-full flex flex-col font-mono"
       onClick={handleTerminalClick}
     >
       {/* Matrix effect overlay */}
@@ -660,28 +626,36 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         {output.map((line, i) => (
           <div 
             key={i} 
-            className={`whitespace-pre-wrap ${line.type === 'prompt' ? 'text-[#00ff88]/60' : line.type === 'error' ? 'text-red-400' : 'text-[#00ff88]'}`}
+            className={`whitespace-pre-wrap terminal-text ${
+              line.type === 'prompt' 
+                ? 'text-[#4a4a5c]' 
+                : line.type === 'error' 
+                ? 'text-[#ef4444]' 
+                : 'text-[#c8c8d0]'
+            }`}
             dangerouslySetInnerHTML={{ __html: line.content }}
           />
         ))}
         
         {/* Current prompt */}
         {!isTyping && (
-          <div className="flex items-center">
-            <span className="text-[#00ff88]/60">
-              gilfoyle@galluppi.ai:{currentPath === '/' ? '~' : currentPath}${' '}
-            </span>
+          <div className="flex items-center terminal-text">
+            <span style={{ color: '#6366f1' }}>gilfoyle@galluppi.ai</span>
+            <span style={{ color: '#4a4a5c' }}>:{currentPath === '/' ? '~' : currentPath}</span>
+            <span style={{ color: '#00ff88' }}>$</span>
+            <span style={{ color: '#4a4a5c' }}>&nbsp;</span>
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none text-[#00ff88] caret-[#00ff88]"
+              className="flex-1 bg-transparent outline-none caret-[#00ff88]"
+              style={{ color: '#e0e0e0' }}
               autoComplete="off"
               spellCheck={false}
             />
-            <span className="animate-pulse">_</span>
+            <span className="animate-pulse" style={{ color: '#00ff88' }}>_</span>
           </div>
         )}
       </div>

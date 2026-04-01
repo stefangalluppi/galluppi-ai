@@ -3,9 +3,7 @@
 import { useEffect, useState } from 'react';
 import { TerminalBoot } from '@/components/TerminalBoot';
 import { InteractiveTerminal } from '@/components/InteractiveTerminal';
-import { ParticleBackground } from '@/components/ParticleBackground';
-import { CursorTrail } from '@/components/CursorTrail';
-import { CommandPalette } from '@/components/CommandPalette';
+import { ASCIIArt } from '@/components/ASCIIArt';
 
 interface UserData {
   ip: string;
@@ -33,58 +31,55 @@ interface UserData {
 
 export default function Home() {
   const [bootComplete, setBootComplete] = useState(false);
+  const [artComplete, setArtComplete] = useState(false);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [showCommandPalette, setShowCommandPalette] = useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setShowCommandPalette(true);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   const handleBootComplete = (data: UserData) => {
     setUserData(data);
     setBootComplete(true);
   };
 
+  const handleArtComplete = () => {
+    setArtComplete(true);
+  };
+
   return (
-    <main className="relative min-h-screen bg-[#0a0a0a] text-[#e0e0e0] overflow-x-hidden">
-      {/* Background Effects - only show during boot */}
-      {!bootComplete && (
-        <>
-          <ParticleBackground />
-          <CursorTrail />
-        </>
-      )}
-      
+    <main className="min-h-screen bg-[#0d0d1a] flex items-center justify-center p-0 md:p-8">
       {/* Noise Grain Overlay */}
-      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] bg-noise" />
-      
-      {/* Scanline Effect */}
-      <div className="fixed inset-0 pointer-events-none z-50 scanline" />
+      <div className="noise-overlay" />
 
-      {/* Terminal Boot Sequence */}
-      {!bootComplete && (
-        <TerminalBoot onComplete={handleBootComplete} />
-      )}
-
-      {/* Interactive Terminal - shown after boot */}
-      {bootComplete && userData && (
-        <div className="transition-opacity duration-1000 opacity-100">
-          <InteractiveTerminal userData={userData} />
+      {/* Terminal Window Frame */}
+      <div className="terminal-window w-full md:w-[90vw] h-screen md:h-[85vh]">
+        {/* Title Bar */}
+        <div className="title-bar">
+          <div className="traffic-lights">
+            <span className="dot red"></span>
+            <span className="dot yellow"></span>
+            <span className="dot green"></span>
+          </div>
+          <span className="title">galluppi.ai — terminal</span>
         </div>
-      )}
 
-      {/* Command Palette */}
-      {showCommandPalette && (
-        <CommandPalette onClose={() => setShowCommandPalette(false)} />
-      )}
+        {/* Terminal Body */}
+        <div className="terminal-body">
+          {/* Boot Sequence */}
+          {!bootComplete && (
+            <TerminalBoot onComplete={handleBootComplete} />
+          )}
+
+          {/* ASCII Art Hero */}
+          {bootComplete && !artComplete && (
+            <ASCIIArt onComplete={handleArtComplete} />
+          )}
+
+          {/* Interactive Terminal */}
+          {artComplete && userData && (
+            <div className="fade-in">
+              <InteractiveTerminal userData={userData} />
+            </div>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

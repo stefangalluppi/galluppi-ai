@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useCallback } from 'react';
-import { gsap } from 'gsap';
 import { UAParser } from 'ua-parser-js';
 
 interface TerminalBootProps {
@@ -101,50 +100,51 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     const container = containerRef.current;
     container.innerHTML = '';
 
-    // Build lines
-    const lines: string[] = [
-      'GALLUPPI.AI v1.0 INITIALIZING...',
-      '[OK] SYSTEMS ONLINE',
-      '[OK] SCANNING NETWORK...',
-      '',
-      '> CONNECTION DETECTED',
-      `> IP: ${d.ip}`,
-      `> LOCATION: ${d.city}, ${d.region}, ${d.country}`,
-      `> DEVICE: ${d.device} / ${d.os} / ${d.browser}`,
-      `> SCREEN: ${d.screenRes}`,
-      `> NETWORK: ${d.isp}`,
+    // Build lines with new color scheme
+    const lines: Array<{ text: string; color: string }> = [
+      { text: 'GALLUPPI.AI v1.0 INITIALIZING...', color: '#c8c8d0' },
+      { text: '[OK] SYSTEMS ONLINE', color: '#6366f1' },
+      { text: '[OK] SCANNING NETWORK...', color: '#6366f1' },
+      { text: '', color: '#c8c8d0' },
+      { text: '> CONNECTION DETECTED', color: '#c8c8d0' },
+      { text: `> IP: ${d.ip}`, color: '#e0e0e0' },
+      { text: `> LOCATION: ${d.city}, ${d.region}, ${d.country}`, color: '#e0e0e0' },
+      { text: `> DEVICE: ${d.device} / ${d.os} / ${d.browser}`, color: '#e0e0e0' },
+      { text: `> SCREEN: ${d.screenRes}`, color: '#e0e0e0' },
+      { text: `> NETWORK: ${d.isp}`, color: '#e0e0e0' },
     ];
 
-    if (d.battery) lines.push(`> BATTERY: ${d.battery}`);
-    lines.push(`> LOCAL TIME: ${d.fmt.format(new Date())}`);
-    if (d.conn) lines.push(`> CONNECTION: ${d.conn}`);
-    if (d.gpu) lines.push(`> GPU: ${d.gpu}`);
-    lines.push(`> THEME: ${d.scheme}`);
-    lines.push(`> ${d.referrer}`);
-    lines.push(`> VISIT #${d.visits}`);
+    if (d.battery) lines.push({ text: `> BATTERY: ${d.battery}`, color: '#e0e0e0' });
+    lines.push({ text: `> LOCAL TIME: ${d.fmt.format(new Date())}`, color: '#e0e0e0' });
+    if (d.conn) lines.push({ text: `> CONNECTION: ${d.conn}`, color: '#e0e0e0' });
+    if (d.gpu) lines.push({ text: `> GPU: ${d.gpu}`, color: '#e0e0e0' });
+    lines.push({ text: `> THEME: ${d.scheme}`, color: '#e0e0e0' });
+    lines.push({ text: `> ${d.referrer}`, color: '#e0e0e0' });
+    lines.push({ text: `> VISIT #${d.visits}`, color: '#e0e0e0' });
 
     // IPQS threat intelligence
-    lines.push('');
-    lines.push('[OK] RUNNING THREAT ANALYSIS...');
-    if (d.ipData.fraud_score !== null) lines.push(`> FRAUD SCORE: ${d.ipData.fraud_score}/100`);
-    lines.push(`> VPN: ${d.ipData.vpn ? '⚠ DETECTED' : 'NOT DETECTED'}`);
-    lines.push(`> PROXY: ${d.ipData.proxy ? '⚠ DETECTED' : 'NOT DETECTED'}`);
-    lines.push(`> TOR: ${d.ipData.tor ? '⚠ DETECTED' : 'NO'}`);
-    if (d.ipData.bot) lines.push('> BOT: ⚠ DETECTED');
-    if (d.ipData.recent_abuse) lines.push('> RECENT ABUSE: ⚠ FLAGGED');
-    if (d.ipData.host) lines.push(`> HOST: ${d.ipData.host}`);
-    lines.push(`> DEVICE TYPE: ${d.ipData.mobile ? 'MOBILE' : 'DESKTOP'}`);
+    lines.push({ text: '', color: '#c8c8d0' });
+    lines.push({ text: '[OK] RUNNING THREAT ANALYSIS...', color: '#6366f1' });
+    if (d.ipData.fraud_score !== null) lines.push({ text: `> FRAUD SCORE: ${d.ipData.fraud_score}/100`, color: '#c8c8d0' });
+    lines.push({ text: `> VPN: ${d.ipData.vpn ? '⚠ DETECTED' : 'NOT DETECTED'}`, color: d.ipData.vpn ? '#ef4444' : '#c8c8d0' });
+    lines.push({ text: `> PROXY: ${d.ipData.proxy ? '⚠ DETECTED' : 'NOT DETECTED'}`, color: d.ipData.proxy ? '#ef4444' : '#c8c8d0' });
+    lines.push({ text: `> TOR: ${d.ipData.tor ? '⚠ DETECTED' : 'NO'}`, color: d.ipData.tor ? '#ef4444' : '#c8c8d0' });
+    if (d.ipData.bot) lines.push({ text: '> BOT: ⚠ DETECTED', color: '#ef4444' });
+    if (d.ipData.recent_abuse) lines.push({ text: '> RECENT ABUSE: ⚠ FLAGGED', color: '#ef4444' });
+    if (d.ipData.host) lines.push({ text: `> HOST: ${d.ipData.host}`, color: '#c8c8d0' });
+    lines.push({ text: `> DEVICE TYPE: ${d.ipData.mobile ? 'MOBILE' : 'DESKTOP'}`, color: '#c8c8d0' });
 
-    lines.push('');
-    lines.push('> ██████████████████ IDENTIFIED');
-    lines.push('');
-    lines.push('> Welcome. You have my attention.');
+    lines.push({ text: '', color: '#c8c8d0' });
+    lines.push({ text: '> ██████████████████ IDENTIFIED', color: '#00ff88' }); // Only green moment
+    lines.push({ text: '', color: '#c8c8d0' });
+    lines.push({ text: '> Welcome. You have my attention.', color: '#e0e0e0' });
 
     // Create DOM elements upfront — all hidden
     const lineEls: HTMLDivElement[] = [];
-    lines.forEach((text) => {
+    lines.forEach(({ text, color }) => {
       const el = document.createElement('div');
-      el.className = 'font-mono text-[#00ff88] whitespace-pre text-sm md:text-base lg:text-lg leading-relaxed';
+      el.className = 'font-mono whitespace-pre text-sm md:text-base lg:text-lg leading-relaxed terminal-text';
+      el.style.color = color;
       el.style.visibility = 'hidden';
       el.style.minHeight = '1.6em';
       container.appendChild(el);
@@ -152,9 +152,9 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     });
 
     // Typewriter: type each line character by character, then move to next
-    const CHAR_MS = 18;      // ms per character
-    const LINE_PAUSE = 120;  // pause between lines
-    const SCAN_PAUSE = 600;  // pause after "SCANNING NETWORK..."
+    const CHAR_MS = 15;      // ms per character
+    const LINE_PAUSE = 100;  // pause between lines
+    const SCAN_PAUSE = 500;  // pause after "SCANNING NETWORK..."
 
     let lineIdx = 0;
 
@@ -174,11 +174,11 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
             screenRes: d.screenRes,
             ipData: d.ipData,
           });
-        }, 1200);
+        }, 800);
         return;
       }
 
-      const text = lines[lineIdx];
+      const { text } = lines[lineIdx];
       const el = lineEls[lineIdx];
       el.style.visibility = 'visible';
 
@@ -213,7 +213,7 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     typeLine();
 
     // Live clock update on the time line
-    const timeLineIdx = lines.findIndex(l => l.startsWith('> LOCAL TIME:'));
+    const timeLineIdx = lines.findIndex(l => l.text.startsWith('> LOCAL TIME:'));
     if (timeLineIdx >= 0) {
       const iv = setInterval(() => {
         const el = lineEls[timeLineIdx];
@@ -229,7 +229,7 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
   useEffect(() => { run(); }, [run]);
 
   return (
-    <div className="fixed inset-0 bg-[#0a0a0a] z-50 flex items-start justify-center p-8 pt-[15vh] overflow-auto">
+    <div className="w-full h-full flex items-start justify-start p-4 md:p-8 overflow-auto">
       <div ref={containerRef} className="w-full max-w-4xl" />
     </div>
   );
