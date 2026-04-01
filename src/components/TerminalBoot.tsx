@@ -5,7 +5,18 @@ import { gsap } from 'gsap';
 import { UAParser } from 'ua-parser-js';
 
 interface TerminalBootProps {
-  onComplete: () => void;
+  onComplete: (userData: {
+    ip: string;
+    city: string;
+    region: string;
+    country: string;
+    isp: string;
+    device: string;
+    os: string;
+    browser: string;
+    screenRes: string;
+    ipData: IpData;
+  }) => void;
 }
 
 interface IpData {
@@ -150,7 +161,20 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     function typeLine() {
       if (lineIdx >= lines.length) {
         // Done — pause then transition
-        setTimeout(onComplete, 1200);
+        setTimeout(() => {
+          onComplete({
+            ip: d.ip,
+            city: d.city,
+            region: d.region,
+            country: d.country,
+            isp: d.isp,
+            device: d.device,
+            os: d.os,
+            browser: d.browser,
+            screenRes: d.screenRes,
+            ipData: d.ipData,
+          });
+        }, 1200);
         return;
       }
 
