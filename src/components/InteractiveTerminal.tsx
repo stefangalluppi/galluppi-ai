@@ -120,6 +120,36 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
 ╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║ ██╗██║  ██║██║
  ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝
 `;
+  // Fixed epoch: Jan 1, 2024 00:00 UTC — uptime counts from here
+  const UPTIME_EPOCH = 1704067200000;
+
+  const getUptime = useCallback(() => {
+    const elapsed = Date.now() - UPTIME_EPOCH;
+    const days = Math.floor(elapsed / 86400000);
+    const hours = Math.floor((elapsed % 86400000) / 3600000);
+    const minutes = Math.floor((elapsed % 3600000) / 60000);
+    return { days, hours, minutes, formatted: `${days}d ${hours}h ${minutes}m` };
+  }, []);
+
+  const getNeofetchOutput = useCallback(() => {
+    const u = getUptime();
+    return ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗    █████╗ ██╗
+██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║   ██╔══██╗██║
+██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║   ███████║██║
+██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║   ██╔══██║██║
+╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║ ██╗██║  ██║██║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝
+
+  gilfoyle@galluppi.ai
+  ─────────────────────
+  OS:      GALLUPPI.AI v1.0
+  Agents:  11 active
+  Uptime:  ${u.formatted}
+  Shell:   galluppi-sh
+  CPU:     Neural Engine v4
+  Memory:  ∞\n`;
+  }, [getUptime]);
+
   const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([]);
   const [hasAnimatedIntro, setHasAnimatedIntro] = useState(false);
   const [input, setInput] = useState('');
@@ -162,7 +192,19 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
 
     function typeNextLine() {
       if (lineIdx >= lines.length) {
-        setIsTyping(false);
+        // After ASCII art, show neofetch
+        const nfLines = getNeofetchOutput().split('\n');
+        let nfIdx = 0;
+        function typeNeofetchLine() {
+          if (nfIdx >= nfLines.length) {
+            setIsTyping(false);
+            return;
+          }
+          setOutput(prev => [...prev, { type: 'output', content: nfLines[nfIdx] }]);
+          nfIdx++;
+          setTimeout(typeNeofetchLine, 30);
+        }
+        setTimeout(typeNeofetchLine, 200);
         return;
       }
       const line = lines[lineIdx];
@@ -172,7 +214,7 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     }
 
     typeNextLine();
-  }, [hasAnimatedIntro, asciiArt]);
+  }, [hasAnimatedIntro, asciiArt, getNeofetchOutput]);
 
   // Unlock archive for returning visitors
   useEffect(() => {
@@ -491,7 +533,8 @@ You tell me.\n`;
       }
 
       case 'clear': {
-        setOutput([]);
+        const nfLines = getNeofetchOutput().split('\n').map(line => ({ type: 'output' as const, content: line }));
+        setOutput(nfLines);
         break;
       }
 
@@ -722,7 +765,8 @@ Everything else is need-to-know. You don't need to know.\n`;
       }
 
       case 'uptime': {
-        await typeOutput('847 days, 14 hours, 22 minutes. No restarts. No excuses.\n', 2);
+        const u = getUptime();
+        await typeOutput(`${u.days} days, ${u.hours} hours, ${u.minutes} minutes. No restarts. No excuses.\n`, 2);
         break;
       }
 
@@ -951,22 +995,7 @@ Let that sink in.\n`, 2);
       }
 
       case 'neofetch': {
-        const neofetch = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗    █████╗ ██╗
-██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║   ██╔══██╗██║
-██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║   ███████║██║
-██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║   ██╔══██║██║
-╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║ ██╗██║  ██║██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝
-
-  gilfoyle@galluppi.ai
-  ─────────────────────
-  OS:      GALLUPPI.AI v1.0
-  Agents:  11 active
-  Uptime:  847d 14h 22m
-  Shell:   galluppi-sh
-  CPU:     Neural Engine v4
-  Memory:  ∞\n`;
-        await typeOutput(neofetch, 1);
+        await typeOutput(getNeofetchOutput(), 1);
         break;
       }
 
@@ -1330,7 +1359,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
       <div className="h-6 bg-[#0a0a0a] text-[#333] text-[0.65rem] font-mono flex items-center px-4 gap-3 border-t border-[#222]">
         <span>11 agents online</span>
         <span className="text-[#222]">│</span>
-        <span>uptime 847d</span>
+        <span>uptime {getUptime().formatted}</span>
         <span className="text-[#222]">│</span>
         <span>load {systemLoad.toFixed(2)}</span>
         <span className="text-[#222]">│</span>
