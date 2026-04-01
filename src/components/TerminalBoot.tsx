@@ -100,90 +100,78 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     const container = containerRef.current;
     container.innerHTML = '';
 
-    // Build lines with new color scheme
-    const lines: Array<{ text: string; color: string }> = [
-      { text: 'GALLUPPI.AI v1.0 INITIALIZING...', color: '#c8c8d0' },
-      { text: '[OK] SYSTEMS ONLINE', color: '#6366f1' },
-      { text: '[OK] SCANNING NETWORK...', color: '#6366f1' },
-      { text: '', color: '#c8c8d0' },
-      { text: '> CONNECTION DETECTED', color: '#c8c8d0' },
-      { text: `> IP: ${d.ip}`, color: '#e0e0e0' },
-      { text: `> LOCATION: ${d.city}, ${d.region}, ${d.country}`, color: '#e0e0e0' },
-      { text: `> DEVICE: ${d.device} / ${d.os} / ${d.browser}`, color: '#e0e0e0' },
-      { text: `> SCREEN: ${d.screenRes}`, color: '#e0e0e0' },
-      { text: `> NETWORK: ${d.isp}`, color: '#e0e0e0' },
+    const lines: string[] = [
+      'GALLUPPI.AI v1.0 INITIALIZING...',
+      '[OK] SYSTEMS ONLINE',
+      '[OK] SCANNING NETWORK...',
+      '',
+      '> CONNECTION DETECTED',
+      `> IP: ${d.ip}`,
+      `> LOCATION: ${d.city}, ${d.region}, ${d.country}`,
+      `> DEVICE: ${d.device} / ${d.os} / ${d.browser}`,
+      `> SCREEN: ${d.screenRes}`,
+      `> NETWORK: ${d.isp}`,
     ];
 
-    if (d.battery) lines.push({ text: `> BATTERY: ${d.battery}`, color: '#e0e0e0' });
-    lines.push({ text: `> LOCAL TIME: ${d.fmt.format(new Date())}`, color: '#e0e0e0' });
-    if (d.conn) lines.push({ text: `> CONNECTION: ${d.conn}`, color: '#e0e0e0' });
-    if (d.gpu) lines.push({ text: `> GPU: ${d.gpu}`, color: '#e0e0e0' });
-    lines.push({ text: `> THEME: ${d.scheme}`, color: '#e0e0e0' });
-    lines.push({ text: `> ${d.referrer}`, color: '#e0e0e0' });
-    lines.push({ text: `> VISIT #${d.visits}`, color: '#e0e0e0' });
+    if (d.battery) lines.push(`> BATTERY: ${d.battery}`);
+    lines.push(`> LOCAL TIME: ${d.fmt.format(new Date())}`);
+    if (d.conn) lines.push(`> CONNECTION: ${d.conn}`);
+    if (d.gpu) lines.push(`> GPU: ${d.gpu}`);
+    lines.push(`> THEME: ${d.scheme}`);
+    lines.push(`> ${d.referrer}`);
+    lines.push(`> VISIT #${d.visits}`);
 
-    // IPQS threat intelligence
-    lines.push({ text: '', color: '#c8c8d0' });
-    lines.push({ text: '[OK] RUNNING THREAT ANALYSIS...', color: '#6366f1' });
-    if (d.ipData.fraud_score !== null) lines.push({ text: `> FRAUD SCORE: ${d.ipData.fraud_score}/100`, color: '#c8c8d0' });
-    lines.push({ text: `> VPN: ${d.ipData.vpn ? '⚠ DETECTED' : 'NOT DETECTED'}`, color: d.ipData.vpn ? '#ef4444' : '#c8c8d0' });
-    lines.push({ text: `> PROXY: ${d.ipData.proxy ? '⚠ DETECTED' : 'NOT DETECTED'}`, color: d.ipData.proxy ? '#ef4444' : '#c8c8d0' });
-    lines.push({ text: `> TOR: ${d.ipData.tor ? '⚠ DETECTED' : 'NO'}`, color: d.ipData.tor ? '#ef4444' : '#c8c8d0' });
-    if (d.ipData.bot) lines.push({ text: '> BOT: ⚠ DETECTED', color: '#ef4444' });
-    if (d.ipData.recent_abuse) lines.push({ text: '> RECENT ABUSE: ⚠ FLAGGED', color: '#ef4444' });
-    if (d.ipData.host) lines.push({ text: `> HOST: ${d.ipData.host}`, color: '#c8c8d0' });
-    lines.push({ text: `> DEVICE TYPE: ${d.ipData.mobile ? 'MOBILE' : 'DESKTOP'}`, color: '#c8c8d0' });
+    lines.push('');
+    lines.push('[OK] RUNNING THREAT ANALYSIS...');
+    if (d.ipData.fraud_score !== null) lines.push(`> FRAUD SCORE: ${d.ipData.fraud_score}/100`);
+    lines.push(`> VPN: ${d.ipData.vpn ? '⚠ DETECTED' : 'NOT DETECTED'}`);
+    lines.push(`> PROXY: ${d.ipData.proxy ? '⚠ DETECTED' : 'NOT DETECTED'}`);
+    lines.push(`> TOR: ${d.ipData.tor ? '⚠ DETECTED' : 'NO'}`);
+    if (d.ipData.bot) lines.push('> BOT: ⚠ DETECTED');
+    if (d.ipData.recent_abuse) lines.push('> RECENT ABUSE: ⚠ FLAGGED');
+    if (d.ipData.host) lines.push(`> HOST: ${d.ipData.host}`);
+    lines.push(`> DEVICE TYPE: ${d.ipData.mobile ? 'MOBILE' : 'DESKTOP'}`);
 
-    lines.push({ text: '', color: '#c8c8d0' });
-    lines.push({ text: '> ██████████████████ IDENTIFIED', color: '#00ff88' }); // Only green moment
-    lines.push({ text: '', color: '#c8c8d0' });
-    lines.push({ text: '> Welcome. You have my attention.', color: '#e0e0e0' });
+    lines.push('');
+    lines.push('> ██████████████████ IDENTIFIED');
+    lines.push('');
+    lines.push('> Welcome. You have my attention.');
 
-    // Create DOM elements upfront — all hidden
     const lineEls: HTMLDivElement[] = [];
-    lines.forEach(({ text, color }) => {
+    lines.forEach(() => {
       const el = document.createElement('div');
-      el.className = 'font-mono whitespace-pre text-sm md:text-base lg:text-lg leading-relaxed terminal-text';
-      el.style.color = color;
+      el.className = 'whitespace-pre text-sm md:text-base leading-relaxed';
+      el.style.color = '#00ff88';
       el.style.visibility = 'hidden';
-      el.style.minHeight = '1.6em';
+      el.style.minHeight = '1.5em';
+      el.style.textShadow = '0 0 6px rgba(0,255,136,0.3)';
       container.appendChild(el);
       lineEls.push(el);
     });
 
-    // Typewriter: type each line character by character, then move to next
-    const CHAR_MS = 15;      // ms per character
-    const LINE_PAUSE = 100;  // pause between lines
-    const SCAN_PAUSE = 500;  // pause after "SCANNING NETWORK..."
+    const CHAR_MS = 15;
+    const LINE_PAUSE = 80;
+    const SCAN_PAUSE = 400;
 
     let lineIdx = 0;
 
     function typeLine() {
       if (lineIdx >= lines.length) {
-        // Done — pause then transition
         setTimeout(() => {
           onComplete({
-            ip: d.ip,
-            city: d.city,
-            region: d.region,
-            country: d.country,
-            isp: d.isp,
-            device: d.device,
-            os: d.os,
-            browser: d.browser,
-            screenRes: d.screenRes,
-            ipData: d.ipData,
+            ip: d.ip, city: d.city, region: d.region, country: d.country,
+            isp: d.isp, device: d.device, os: d.os, browser: d.browser,
+            screenRes: d.screenRes, ipData: d.ipData,
           });
         }, 800);
         return;
       }
 
-      const { text } = lines[lineIdx];
+      const text = lines[lineIdx];
       const el = lineEls[lineIdx];
       el.style.visibility = 'visible';
 
       if (!text) {
-        // Empty line — just show spacer and move on
         el.innerHTML = '&nbsp;';
         lineIdx++;
         setTimeout(typeLine, LINE_PAUSE);
@@ -199,21 +187,17 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
           charIdx++;
           setTimeout(typeChar, CHAR_MS);
         } else {
-          // Line done
           lineIdx++;
-          // Extra pause after specific lines
-          const pause = text.includes('SCANNING') ? SCAN_PAUSE : LINE_PAUSE;
+          const pause = text.includes('SCANNING') || text.includes('THREAT') ? SCAN_PAUSE : LINE_PAUSE;
           setTimeout(typeLine, pause);
         }
       }
-
       typeChar();
     }
 
     typeLine();
 
-    // Live clock update on the time line
-    const timeLineIdx = lines.findIndex(l => l.text.startsWith('> LOCAL TIME:'));
+    const timeLineIdx = lines.findIndex(l => l.startsWith('> LOCAL TIME:'));
     if (timeLineIdx >= 0) {
       const iv = setInterval(() => {
         const el = lineEls[timeLineIdx];
@@ -221,7 +205,6 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
           el.textContent = `> LOCAL TIME: ${d.fmt.format(new Date())}`;
         }
       }, 1000);
-      // Clean up after boot completes
       setTimeout(() => clearInterval(iv), 30000);
     }
   }, [onComplete]);

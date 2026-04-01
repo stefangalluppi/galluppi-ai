@@ -250,9 +250,9 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
         Object.entries(dir).forEach(([name, entry]) => {
           if (name.startsWith('.') && !showHidden) return;
           if (entry.type === 'dir') {
-            output += `<span style="color: #6366f1">${name}/</span>  `;
+            output += `<span style="color:#00ff88;font-weight:bold">${name}/</span>  `;
           } else {
-            output += `<span style="color: #c8c8d0">${name}</span>  `;
+            output += `<span style="color:#00cc6a">${name}</span>  `;
           }
         });
         
@@ -569,6 +569,56 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
       return newSeq;
     });
 
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      // Tab completion
+      const parts = input.split(/\s+/);
+      const cmd = parts[0];
+      
+      if (parts.length <= 1) {
+        // Complete command names
+        const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo'];
+        const matches = commands.filter(c => c.startsWith(cmd));
+        if (matches.length === 1) {
+          setInput(matches[0] + ' ');
+        } else if (matches.length > 1) {
+          setOutput(prev => [...prev, 
+            { type: 'prompt', content: `gilfoyle@galluppi.ai:${currentPath === '/' ? '~' : currentPath}$ ${input}` },
+            { type: 'output', content: matches.join('  ') + '\n' }
+          ]);
+        }
+      } else {
+        // Complete file/dir names
+        const partial = parts[parts.length - 1];
+        const dir = getDirectory(currentPath);
+        if (dir) {
+          const matches = Object.keys(dir).filter(name => name.startsWith(partial));
+          if (matches.length === 1) {
+            const match = matches[0];
+            const entry = dir[match];
+            parts[parts.length - 1] = match + (entry.type === 'dir' ? '/' : '');
+            setInput(parts.join(' '));
+          } else if (matches.length > 1) {
+            // Find common prefix
+            let common = partial;
+            for (let i = partial.length; ; i++) {
+              const chars = matches.map(m => m[i]).filter(Boolean);
+              if (chars.length === matches.length && new Set(chars).size === 1) {
+                common += chars[0];
+              } else break;
+            }
+            parts[parts.length - 1] = common;
+            setInput(parts.join(' '));
+            setOutput(prev => [...prev,
+              { type: 'prompt', content: `gilfoyle@galluppi.ai:${currentPath === '/' ? '~' : currentPath}$ ${input}` },
+              { type: 'output', content: matches.map(m => dir[m].type === 'dir' ? m + '/' : m).join('  ') + '\n' }
+            ]);
+          }
+        }
+      }
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       if (input.trim() && !isTyping) {
@@ -626,36 +676,35 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         {output.map((line, i) => (
           <div 
             key={i} 
-            className={`whitespace-pre-wrap terminal-text ${
+            className={`whitespace-pre-wrap ${
               line.type === 'prompt' 
-                ? 'text-[#4a4a5c]' 
+                ? 'text-[#00ff88]/50' 
                 : line.type === 'error' 
-                ? 'text-[#ef4444]' 
-                : 'text-[#c8c8d0]'
+                ? 'text-[#ff4444]' 
+                : 'text-[#00ff88]'
             }`}
+            style={{ textShadow: '0 0 6px rgba(0,255,136,0.2)' }}
             dangerouslySetInnerHTML={{ __html: line.content }}
           />
         ))}
         
         {/* Current prompt */}
         {!isTyping && (
-          <div className="flex items-center terminal-text">
-            <span style={{ color: '#6366f1' }}>gilfoyle@galluppi.ai</span>
-            <span style={{ color: '#4a4a5c' }}>:{currentPath === '/' ? '~' : currentPath}</span>
-            <span style={{ color: '#00ff88' }}>$</span>
-            <span style={{ color: '#4a4a5c' }}>&nbsp;</span>
+          <div className="flex items-center" style={{ textShadow: '0 0 6px rgba(0,255,136,0.2)' }}>
+            <span className="text-[#00ff88]">gilfoyle@galluppi.ai</span>
+            <span className="text-[#00ff88]/50">:{currentPath === '/' ? '~' : currentPath}</span>
+            <span className="text-[#00ff88]">$ </span>
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none caret-[#00ff88]"
-              style={{ color: '#e0e0e0' }}
+              className="flex-1 bg-transparent outline-none text-[#00ff88] caret-[#00ff88]"
               autoComplete="off"
               spellCheck={false}
             />
-            <span className="animate-pulse" style={{ color: '#00ff88' }}>_</span>
+            <span className="animate-pulse text-[#00ff88]">_</span>
           </div>
         )}
       </div>
