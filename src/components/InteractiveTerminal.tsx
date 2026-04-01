@@ -113,7 +113,16 @@ const ambientMessages = [
 export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   const [filesystem, setFilesystem] = useState<FileSystem>(baseFilesystem);
   const [currentPath, setCurrentPath] = useState('/');
-  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([]);
+  const asciiArt = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗   █████╗ ██╗
+██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║  ██╔══██╗██║
+██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║  ███████║██║
+██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║  ██╔══██║██║
+╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║  ██║  ██║██║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝  ╚═╝  ╚═╝╚═╝
+`;
+  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([
+    { type: 'output', content: asciiArt },
+  ]);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -789,9 +798,30 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
     }
   };
 
+  // Always keep input focused
   useEffect(() => {
     inputRef.current?.focus();
+    
+    // Re-focus on any click or keydown anywhere on the page
+    const refocus = () => {
+      setTimeout(() => inputRef.current?.focus(), 0);
+    };
+    
+    document.addEventListener('click', refocus);
+    document.addEventListener('keydown', refocus);
+    
+    return () => {
+      document.removeEventListener('click', refocus);
+      document.removeEventListener('keydown', refocus);
+    };
   }, []);
+
+  // Re-focus after output changes (e.g., after command completes)
+  useEffect(() => {
+    if (!isTyping) {
+      inputRef.current?.focus();
+    }
+  }, [output, isTyping]);
 
   const handleTerminalClick = () => {
     inputRef.current?.focus();
@@ -839,6 +869,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
               onKeyDown={handleKeyDown}
               className="flex-1 bg-transparent outline-none text-[#e0e0e0] caret-[#00ff88]"
               autoComplete="off"
+              autoFocus
               spellCheck={false}
             />
             <span className="animate-pulse text-[#00ff88]">_</span>
