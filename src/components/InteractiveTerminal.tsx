@@ -457,16 +457,22 @@ FUN
       }
 
       case 'neofetch': {
-        const neofetch = `        ██████╗  █████╗ ██╗
-       ██╔════╝ ██╔══██╗██║        gilfoyle@galluppi.ai
-       ██║  ███╗███████║██║        ─────────────────────
-       ██║   ██║██╔══██║██║        OS: GALLUPPI.AI v1.0
-       ╚██████╔╝██║  ██║██║        Agents: 11 active
-        ╚═════╝ ╚═╝  ╚═╝╚═╝       Uptime: 847d 14h 22m
-                                    Shell: galluppi-sh
-                                    CPU: Neural Engine v4
-                                    Memory: ∞\n`;
-        await typeOutput(neofetch, 2);
+        const neofetch = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗   █████╗ ██╗
+██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║  ██╔══██╗██║
+██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║  ███████║██║
+██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║  ██╔══██║██║
+╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║  ██║  ██║██║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝  ╚═╝  ╚═╝╚═╝
+
+  gilfoyle@galluppi.ai
+  ─────────────────────
+  OS:      GALLUPPI.AI v1.0
+  Agents:  11 active
+  Uptime:  847d 14h 22m
+  Shell:   galluppi-sh
+  CPU:     Neural Engine v4
+  Memory:  ∞\n`;
+        await typeOutput(neofetch, 1);
         break;
       }
 
