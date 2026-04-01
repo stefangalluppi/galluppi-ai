@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { kv } from '@vercel/kv';
 
 const IPQS_KEY = process.env.IPQS_API_KEY || '';
 
 export async function GET(req: NextRequest) {
-  // Get visitor IP from headers
   const forwarded = req.headers.get('x-forwarded-for');
   const ip = forwarded ? forwarded.split(',')[0].trim() : req.headers.get('x-real-ip') || '0.0.0.0';
 
@@ -18,8 +18,7 @@ export async function GET(req: NextRequest) {
     );
     const data = await res.json();
 
-    // Only return what we need — never expose the API key or request_id
-    return NextResponse.json({
+    const visitor = {
       ip,
       city: data.city || 'Unknown',
       region: data.region || 'Unknown',
@@ -38,7 +37,25 @@ export async function GET(req: NextRequest) {
       lng: data.longitude ?? null,
       recent_abuse: data.recent_abuse ?? false,
       host: data.host || '',
-    });
+    };
+
+    // Persist to KV
+    try {
+      const ua = req.headers.get('user-agent') || '';
+      const record = {
+        ...visitor,
+        ua,
+        ts: Date.now(),
+        path: req.nextUrl.searchParams.get('path') || '/',
+      };
+      // Push to a list, capped at 500 entries
+      await kv.lpush('visitors', JSON.stringify(record));
+      await kv.ltrim('visitors', 0, 499);
+    } catch {
+      // KV write failure is non-blocking
+    }
+
+    return NextResponse.json(visitor);
   } catch {
     return NextResponse.json({ ip, error: 'lookup failed' }, { status: 502 });
   }
