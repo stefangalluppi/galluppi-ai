@@ -8,29 +8,31 @@ interface TerminalBootProps {
   onComplete: () => void;
 }
 
+interface IpData {
+  ip: string; city: string; region: string; country: string; isp: string; org: string;
+  fraud_score: number | null; vpn: boolean; proxy: boolean; tor: boolean;
+  bot: boolean; crawler: boolean; mobile: boolean; timezone: string;
+  recent_abuse: boolean; host: string;
+}
+
 async function collectUserData() {
-  // IP + geo — use ipapi.co (free, HTTPS)
-  let ip = 'unknown', city = 'unknown', region = 'unknown', country = 'unknown', isp = 'unknown';
+  let ipData: IpData = {
+    ip: 'unknown', city: 'unknown', region: 'unknown', country: 'unknown',
+    isp: 'unknown', org: '', fraud_score: null, vpn: false, proxy: false,
+    tor: false, bot: false, crawler: false, mobile: false, timezone: '',
+    recent_abuse: false, host: '',
+  };
   try {
-    const r = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(4000) });
+    const r = await fetch('/api/identify', { signal: AbortSignal.timeout(6000) });
     const d = await r.json();
-    ip = d.ip || ip;
-    city = d.city || city;
-    region = d.region || region;
-    country = d.country_name || country;
-    isp = d.org || isp;
-  } catch {
-    // fallback — try ipinfo.io
-    try {
-      const r2 = await fetch('https://ipinfo.io/json', { signal: AbortSignal.timeout(4000) });
-      const d2 = await r2.json();
-      ip = d2.ip || ip;
-      city = d2.city || city;
-      region = d2.region || region;
-      country = d2.country || country;
-      isp = d2.org || isp;
-    } catch { /* proceed with unknowns */ }
-  }
+    ipData = { ...ipData, ...d };
+  } catch { /* proceed with defaults */ }
+
+  const ip = ipData.ip;
+  const city = ipData.city;
+  const region = ipData.region;
+  const country = ipData.country;
+  const isp = ipData.isp;
 
   const parser = new UAParser();
   const ua = parser.getResult();
@@ -73,7 +75,7 @@ async function collectUserData() {
   const os = `${ua.os.name || 'Unknown'} ${ua.os.version || ''}`.trim();
   const browser = `${ua.browser.name || 'Unknown'} ${ua.browser.version || ''}`.trim();
 
-  return { ip, city, region, country, isp, device, os, browser, screenRes, battery, fmt, referrer, visits, scheme, conn, gpu };
+  return { ip, city, region, country, isp, device, os, browser, screenRes, battery, fmt, referrer, visits, scheme, conn, gpu, ipData };
 }
 
 export function TerminalBoot({ onComplete }: TerminalBootProps) {
@@ -109,6 +111,19 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     lines.push(`> THEME: ${d.scheme}`);
     lines.push(`> ${d.referrer}`);
     lines.push(`> VISIT #${d.visits}`);
+
+    // IPQS threat intelligence
+    lines.push('');
+    lines.push('[OK] RUNNING THREAT ANALYSIS...');
+    if (d.ipData.fraud_score !== null) lines.push(`> FRAUD SCORE: ${d.ipData.fraud_score}/100`);
+    lines.push(`> VPN: ${d.ipData.vpn ? '⚠ DETECTED' : 'NOT DETECTED'}`);
+    lines.push(`> PROXY: ${d.ipData.proxy ? '⚠ DETECTED' : 'NOT DETECTED'}`);
+    lines.push(`> TOR: ${d.ipData.tor ? '⚠ DETECTED' : 'NO'}`);
+    if (d.ipData.bot) lines.push('> BOT: ⚠ DETECTED');
+    if (d.ipData.recent_abuse) lines.push('> RECENT ABUSE: ⚠ FLAGGED');
+    if (d.ipData.host) lines.push(`> HOST: ${d.ipData.host}`);
+    lines.push(`> DEVICE TYPE: ${d.ipData.mobile ? 'MOBILE' : 'DESKTOP'}`);
+
     lines.push('');
     lines.push('> ██████████████████ IDENTIFIED');
     lines.push('');
