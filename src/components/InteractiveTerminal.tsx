@@ -113,16 +113,15 @@ const ambientMessages = [
 export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   const [filesystem, setFilesystem] = useState<FileSystem>(baseFilesystem);
   const [currentPath, setCurrentPath] = useState('/');
-  const asciiArt = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗   █████╗ ██╗
-██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║  ██╔══██╗██║
-██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║  ███████║██║
-██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║  ██╔══██║██║
-╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║  ██║  ██║██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝  ╚═╝  ╚═╝╚═╝
+  const asciiArt = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗    █████╗ ██╗
+██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║   ██╔══██╗██║
+██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║   ███████║██║
+██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║   ██╔══██║██║
+╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║ ██╗██║  ██║██║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝
 `;
-  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([
-    { type: 'output', content: asciiArt },
-  ]);
+  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([]);
+  const [hasAnimatedIntro, setHasAnimatedIntro] = useState(false);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -151,6 +150,29 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   useEffect(() => {
     scrollToBottom();
   }, [output]);
+
+  // Animate ASCII art on first mount
+  useEffect(() => {
+    if (hasAnimatedIntro) return;
+    setHasAnimatedIntro(true);
+    setIsTyping(true);
+
+    const lines = asciiArt.split('\n');
+    let lineIdx = 0;
+
+    function typeNextLine() {
+      if (lineIdx >= lines.length) {
+        setIsTyping(false);
+        return;
+      }
+      const line = lines[lineIdx];
+      setOutput(prev => [...prev, { type: 'output', content: line }]);
+      lineIdx++;
+      setTimeout(typeNextLine, 60);
+    }
+
+    typeNextLine();
+  }, [hasAnimatedIntro, asciiArt]);
 
   // Unlock archive for returning visitors
   useEffect(() => {
@@ -905,12 +927,12 @@ Let that sink in.\n`, 2);
       }
 
       case 'neofetch': {
-        const neofetch = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗   █████╗ ██╗
-██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║  ██╔══██╗██║
-██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║  ███████║██║
-██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║  ██╔══██║██║
-╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║  ██║  ██║██║
- ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝  ╚═╝  ╚═╝╚═╝
+        const neofetch = ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗    █████╗ ██╗
+██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║   ██╔══██╗██║
+██║  ███╗███████║██║     ██║     ██║   ██║██████╔╝██████╔╝██║   ███████║██║
+██║   ██║██╔══██║██║     ██║     ██║   ██║██╔═══╝ ██╔═══╝ ██║   ██╔══██║██║
+╚██████╔╝██║  ██║███████╗███████╗╚██████╔╝██║     ██║     ██║ ██╗██║  ██║██║
+ ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝ ╚═╝     ╚═╝     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝
 
   gilfoyle@galluppi.ai
   ─────────────────────
