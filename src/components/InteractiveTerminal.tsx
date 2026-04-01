@@ -39,7 +39,7 @@ interface FileSystem {
   };
 }
 
-const filesystem: FileSystem = {
+const baseFilesystem: FileSystem = {
   '/': {
     'about': { type: 'dir' },
     'projects': { type: 'dir' },
@@ -91,23 +91,47 @@ const filesystem: FileSystem = {
     'node-zero.key': { type: 'file', content: 'ACCESS DENIED — CLEARANCE LEVEL 5 REQUIRED' },
     'manifest.log': { type: 'file', content: 'ACCESS DENIED — CLEARANCE LEVEL 5 REQUIRED' },
   },
+  '/archive': {
+    'notes.txt': { type: 'file', content: `You've been here before. That means you're either curious or bored.\n\nEither way, you're paying attention.\n\nThat's more than most.` },
+  },
 };
 
+const ambientMessages = [
+  'agent:cro — funnel scan complete. 3 pages healthy.',
+  'agent:ops-runner — email triage: 4 threads processed',
+  'agent:compliance — regulatory scan: all clear',
+  'agent:research — competitor snapshot saved',
+  'system — cron health: 10/10 jobs nominal',
+  'agent:stardust — flow-engine: 847 active flows',
+  'agent:aidoc — clinical decisions: 2,847/min',
+  'system — memory: 14.2GB / ∞ allocated',
+  'agent:gilfoyle — monitoring active sessions: 1',
+  'agent:report-writer — daily briefing queued',
+  'system — backup: last commit 4h ago. all clear.',
+];
+
 export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
+  const [filesystem, setFilesystem] = useState<FileSystem>(baseFilesystem);
   const [currentPath, setCurrentPath] = useState('/');
-  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error', content: string }>>([]);
+  const [output, setOutput] = useState<Array<{ type: 'prompt' | 'output' | 'error' | 'ambient', content: string }>>([]);
   const [input, setInput] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isTyping, setIsTyping] = useState(false);
   const [showMatrix, setShowMatrix] = useState(false);
   const [konamiSequence, setKonamiSequence] = useState<string[]>([]);
+  const [hasUnlockedArchive, setHasUnlockedArchive] = useState(false);
+  const [lastInputTime, setLastInputTime] = useState(Date.now());
+  const [systemLoad, setSystemLoad] = useState(0.34);
   
   const inputRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
   const typingAbortRef = useRef<AbortController | null>(null);
+  const ambientIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+
+  const visits = parseInt(localStorage.getItem('gai_v') || '0', 10);
 
   const scrollToBottom = () => {
     if (outputRef.current) {
@@ -118,6 +142,76 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
   useEffect(() => {
     scrollToBottom();
   }, [output]);
+
+  // Unlock archive for returning visitors
+  useEffect(() => {
+    if (visits > 1 && !hasUnlockedArchive) {
+      setTimeout(() => {
+        addAmbientLog('[SYSTEM] Returning visitor detected. Extended access granted.');
+        setHasUnlockedArchive(true);
+        
+        // Add archive directory to root
+        setFilesystem(prev => ({
+          ...prev,
+          '/': {
+            ...prev['/'],
+            'archive': { type: 'dir' },
+          },
+        }));
+      }, 10000);
+    }
+  }, [visits, hasUnlockedArchive]);
+
+  // Ambient system log
+  useEffect(() => {
+    const startAmbient = () => {
+      if (ambientIntervalRef.current) {
+        clearInterval(ambientIntervalRef.current);
+      }
+
+      const scheduleNext = () => {
+        const delay = 8000 + Math.random() * 7000; // 8-15 seconds
+        ambientIntervalRef.current = setTimeout(() => {
+          const now = Date.now();
+          const idleTime = now - lastInputTime;
+          
+          // Only show if user has been idle for >5s
+          if (idleTime > 5000) {
+            addAmbientLog(ambientMessages[Math.floor(Math.random() * ambientMessages.length)]);
+          }
+          
+          scheduleNext();
+        }, delay);
+      };
+
+      scheduleNext();
+    };
+
+    startAmbient();
+
+    return () => {
+      if (ambientIntervalRef.current) {
+        clearTimeout(ambientIntervalRef.current);
+      }
+    };
+  }, [lastInputTime]);
+
+  // System load fluctuation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSystemLoad(0.20 + Math.random() * 0.60);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const addAmbientLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    setOutput(prev => [...prev, { 
+      type: 'ambient', 
+      content: `[${timestamp}] ${message}` 
+    }]);
+  };
 
   const typeOutput = async (text: string, speed: number = 2) => {
     if (typingAbortRef.current) {
@@ -225,16 +319,46 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     return output;
   };
 
+  const notFoundResponses = [
+    (cmd: string) => `${cmd}: not found. Try something that exists.`,
+    (cmd: string) => `I don't know what '${cmd}' is and I don't care.`,
+    (cmd: string) => `${cmd}? No. Type 'help' if you're lost.`,
+    (cmd: string) => `Command not recognized. This isn't ChatGPT.`,
+  ];
+
   const executeCommand = async (cmd: string) => {
     const trimmedCmd = cmd.trim();
     if (!trimmedCmd) return;
 
-    setOutput(prev => [...prev, { type: 'prompt', content: `<span style="color: #6366f1">gilfoyle@galluppi.ai</span><span style="color: #4a4a5c">:${currentPath === '/' ? '~' : currentPath}</span><span style="color: #00ff88">$</span> ${trimmedCmd}` }]);
+    setOutput(prev => [...prev, { type: 'prompt', content: `<span style="color: #00ff88">$</span> ${trimmedCmd}` }]);
     setCommandHistory(prev => [...prev.slice(-49), trimmedCmd]);
     
     const parts = trimmedCmd.split(/\s+/);
-    const command = parts[0];
+    const command = parts[0].toLowerCase();
     const args = parts.slice(1);
+
+    // Special handling for common words
+    const lowerCmd = trimmedCmd.toLowerCase();
+    if (['hello', 'hi', 'hey'].includes(lowerCmd)) {
+      await typeOutput(`This isn't a chatbot. Try a real command.\n`, 2);
+      return;
+    }
+    if (['who are you', 'what is this'].includes(lowerCmd)) {
+      await typeOutput(`Read the filesystem. Start with: cat /about/identity.txt\n`, 2);
+      return;
+    }
+    if (['fuck', 'shit', 'damn'].some(w => lowerCmd.includes(w))) {
+      await typeOutput(`Noted. Moving on.\n`, 2);
+      return;
+    }
+    if (lowerCmd === 'please') {
+      await typeOutput(`Manners. Interesting. Still no.\n`, 2);
+      return;
+    }
+    if (['ai', 'chatgpt', 'openai', 'claude'].some(w => lowerCmd.includes(w))) {
+      await typeOutput(`I'm not a chatbot. I'm infrastructure. There's a difference.\n`, 2);
+      return;
+    }
 
     // Handle commands
     switch (command) {
@@ -252,7 +376,7 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
           if (entry.type === 'dir') {
             output += `<span style="color:#00ff88;font-weight:bold">${name}/</span>  `;
           } else {
-            output += `<span style="color:#00cc6a">${name}</span>  `;
+            output += `<span style="color:#e0e0e0">${name}</span>  `;
           }
         });
         
@@ -296,6 +420,15 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
         
         if (file.type === 'dir') {
           await typeOutput(`cat: ${args[0]}: Is a directory\n`, 2);
+          return;
+        }
+
+        // .classified files
+        if (file.content === 'ACCESS DENIED — CLEARANCE LEVEL 5 REQUIRED') {
+          const deniedMsg = `[SECURITY] Unauthorized access attempt logged.
+[SECURITY] Source: ${userData.ip}
+ACCESS DENIED — CLEARANCE LEVEL 5 REQUIRED\n`;
+          await typeOutput(deniedMsg, 2);
           return;
         }
 
@@ -349,7 +482,9 @@ DEVICE: ${userData.device}
 OS: ${userData.os}
 BROWSER: ${userData.browser}
 SCREEN: ${userData.screenRes}
-ISP: ${userData.isp}\n`;
+ISP: ${userData.isp}
+
+You tell me.\n`;
         await typeOutput(info, 2);
         break;
       }
@@ -360,37 +495,18 @@ ISP: ${userData.isp}\n`;
       }
 
       case 'help': {
-        const helpText = `AVAILABLE COMMANDS:
+        const helpText = `You need help? Fine.
 
-NAVIGATION
-  ls                list directory contents
-  cd <dir>          change directory
-  pwd               print working directory
-  cat <file>        display file contents
-  
-SYSTEM
-  whoami            display user information
-  clear             clear the terminal screen
-  help              show this help message
-  history           show command history
-  exit              restart terminal sequence
-  
-NETWORK
-  ping <host>       send ICMP echo request
-  curl <url>        transfer data from URL
-  ssh <host>        secure shell connection
-  nmap <host>       network port scanner
-  
-UTILITIES
-  echo <text>       display a line of text
-  date              display current date/time
-  uname -a          print system information
-  neofetch          display system information with ASCII art
-  top               display process information
-  
-FUN
-  matrix            enter the matrix
-  hack              activate hack mode\n`;
+  ls, cd, cat, pwd    Navigate. Figure it out.
+  whoami              I already know. Do you?
+  top                 See what's running. Don't touch anything.
+  neofetch            System specs. You're welcome.
+  ping, nmap, curl    Network tools. Knock yourself out.
+  history             My history. Not yours.
+  clear               Clean up after yourself.
+  exit                Leave. The door's right there.
+
+Everything else is need-to-know. You don't need to know.\n`;
         await typeOutput(helpText, 1);
         break;
       }
@@ -403,13 +519,26 @@ FUN
 
       case 'ping': {
         const host = args[0] || 'galluppi.ai';
-        const pingText = `PING ${host} (0.0.0.0): 56 data bytes
+        if (host === 'galluppi.ai') {
+          const pingText = `PING galluppi.ai (127.0.0.1): 56 data bytes
+64 bytes: icmp_seq=0 time=0.001ms
+64 bytes: icmp_seq=1 time=0.001ms
+64 bytes: icmp_seq=2 time=0.000ms
+--- galluppi.ai ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss
+round-trip min/avg/max = 0.000/0.001/0.001 ms
+
+Yeah. It's that fast.\n`;
+          await typeOutput(pingText, 2);
+        } else {
+          const pingText = `PING ${host} (0.0.0.0): 56 data bytes
 64 bytes: icmp_seq=0 time=0.001ms
 64 bytes: icmp_seq=1 time=0.001ms
 64 bytes: icmp_seq=2 time=0.002ms
 --- ${host} ping statistics ---
 3 packets transmitted, 3 received, 0% loss\n`;
-        await typeOutput(pingText, 2);
+          await typeOutput(pingText, 2);
+        }
         break;
       }
 
@@ -434,22 +563,32 @@ FUN
       }
 
       case 'ssh': {
-        await typeOutput('Connection refused. You\'re already inside.\n', 2);
+        await typeOutput(`Connection refused. You're already deeper than you should be.\n`, 2);
         break;
       }
 
       case 'sudo': {
-        await typeOutput('[sudo] password for visitor:\nvisitor is not in the sudoers file. This incident will be reported.\n', 2);
+        await typeOutput(`[sudo] password for visitor: ████████
+Access denied. This incident has been logged.
+Your IP has been forwarded to someone who cares.\n`, 2);
         break;
       }
 
       case 'rm': {
-        await typeOutput('Nice try. Incident logged. Your IP has been recorded.\n', 2);
+        await typeOutput(`Cute. That's not how this works.
+Incident logged. IP recorded. Move along.\n`, 2);
+        break;
+      }
+
+      case 'hack': {
+        await typeOutput(`You typed 'hack' into a terminal and expected something to happen.
+Let that sink in.\n`, 2);
         break;
       }
 
       case 'exit': {
-        setOutput(prev => [...prev, { type: 'output', content: 'Rebooting system...\n' }]);
+        await typeOutput(`Disconnecting...
+> You'll be back.\n`, 2);
         setTimeout(() => {
           window.location.reload();
         }, 2000);
@@ -511,13 +650,8 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         setShowMatrix(true);
         setTimeout(() => {
           setShowMatrix(false);
-          setOutput([]);
+          setOutput(prev => [...prev, { type: 'output', content: `> You've seen the movie. Congratulations.\n` }]);
         }, 5000);
-        break;
-      }
-
-      case 'hack': {
-        await typeOutput('Already in progress.\n', 2);
         break;
       }
 
@@ -548,19 +682,21 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
       }
 
       default: {
-        await typeOutput(`command not found: ${command}\n`, 2);
+        const randomResponse = notFoundResponses[Math.floor(Math.random() * notFoundResponses.length)];
+        await typeOutput(randomResponse(command) + '\n', 2);
         break;
       }
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    setLastInputTime(Date.now());
+
     // Track konami code
     const key = e.key;
     setKonamiSequence(prev => {
       const newSeq = [...prev, key].slice(-10);
       if (JSON.stringify(newSeq) === JSON.stringify(konamiCode)) {
-        // Konami code activated!
         const flash = document.createElement('div');
         flash.className = 'fixed inset-0 bg-green-500 animate-pulse z-50';
         document.body.appendChild(flash);
@@ -577,24 +713,21 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
 
     if (e.key === 'Tab') {
       e.preventDefault();
-      // Tab completion
       const parts = input.split(/\s+/);
       const cmd = parts[0];
       
       if (parts.length <= 1) {
-        // Complete command names
         const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo'];
         const matches = commands.filter(c => c.startsWith(cmd));
         if (matches.length === 1) {
           setInput(matches[0] + ' ');
         } else if (matches.length > 1) {
           setOutput(prev => [...prev, 
-            { type: 'prompt', content: `gilfoyle@galluppi.ai:${currentPath === '/' ? '~' : currentPath}$ ${input}` },
+            { type: 'prompt', content: `<span style="color: #00ff88">$</span> ${input}` },
             { type: 'output', content: matches.join('  ') + '\n' }
           ]);
         }
       } else {
-        // Complete file/dir names
         const partial = parts[parts.length - 1];
         const dir = getDirectory(currentPath);
         if (dir) {
@@ -605,7 +738,6 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
             parts[parts.length - 1] = match + (entry.type === 'dir' ? '/' : '');
             setInput(parts.join(' '));
           } else if (matches.length > 1) {
-            // Find common prefix
             let common = partial;
             for (let i = partial.length; ; i++) {
               const chars = matches.map(m => m[i]).filter(Boolean);
@@ -616,8 +748,8 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
             parts[parts.length - 1] = common;
             setInput(parts.join(' '));
             setOutput(prev => [...prev,
-              { type: 'prompt', content: `gilfoyle@galluppi.ai:${currentPath === '/' ? '~' : currentPath}$ ${input}` },
-              { type: 'output', content: matches.map(m => dir[m].type === 'dir' ? m + '/' : m).join('  ') + '\n' }
+              { type: 'prompt', content: `<span style="color: #00ff88">$</span> ${input}` },
+              { type: 'output', content: matches.map(m => dir[m].type === 'dir' ? `<span style="color:#00ff88">${m}/</span>` : m).join('  ') + '\n' }
             ]);
           }
         }
@@ -665,40 +797,39 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
     inputRef.current?.focus();
   };
 
+  // Get visitor count with "threat level" logic
+  const threatLevel = visits < 3 ? 'LOW' : visits < 10 ? 'MEDIUM' : 'ELEVATED';
+
   return (
     <div 
-      className="w-full h-full flex flex-col font-mono"
+      className="w-full h-full flex flex-col font-mono relative"
       onClick={handleTerminalClick}
     >
-      {/* Matrix effect overlay */}
       {showMatrix && (
         <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
           <div className="matrix-rain" />
         </div>
       )}
 
-      {/* Terminal output */}
-      <div ref={outputRef} className="flex-1 overflow-auto p-4 md:p-8">
+      <div ref={outputRef} className="flex-1 overflow-auto p-4 md:p-8 pb-8">
         {output.map((line, i) => (
           <div 
             key={i} 
             className={`whitespace-pre-wrap ${
               line.type === 'prompt' 
-                ? 'text-[#00ff88]/50' 
+                ? 'text-[#00ff88]/80' 
                 : line.type === 'error' 
                 ? 'text-[#ff4444]' 
-                : 'text-[#00ff88]'
+                : line.type === 'ambient'
+                ? 'text-[#555] text-xs'
+                : 'text-[#e0e0e0]'
             }`}
-            style={{ textShadow: '0 0 6px rgba(0,255,136,0.2)' }}
             dangerouslySetInnerHTML={{ __html: line.content }}
           />
         ))}
         
-        {/* Current prompt */}
         {!isTyping && (
-          <div className="flex items-center" style={{ textShadow: '0 0 6px rgba(0,255,136,0.2)' }}>
-            <span className="text-[#00ff88]">gilfoyle@galluppi.ai</span>
-            <span className="text-[#00ff88]/50">:{currentPath === '/' ? '~' : currentPath}</span>
+          <div className="flex items-center">
             <span className="text-[#00ff88]">$ </span>
             <input
               ref={inputRef}
@@ -706,13 +837,26 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 bg-transparent outline-none text-[#00ff88] caret-[#00ff88]"
+              className="flex-1 bg-transparent outline-none text-[#e0e0e0] caret-[#00ff88]"
               autoComplete="off"
               spellCheck={false}
             />
             <span className="animate-pulse text-[#00ff88]">_</span>
           </div>
         )}
+      </div>
+
+      {/* Status Bar */}
+      <div className="h-6 bg-[#0a0a0a] text-[#333] text-[0.65rem] font-mono flex items-center px-4 gap-3 border-t border-[#222]">
+        <span>11 agents online</span>
+        <span className="text-[#222]">│</span>
+        <span>uptime 847d</span>
+        <span className="text-[#222]">│</span>
+        <span>load {systemLoad.toFixed(2)}</span>
+        <span className="text-[#222]">│</span>
+        <span>visitor #{visits}</span>
+        <span className="text-[#222]">│</span>
+        <span className="text-[#444]">threat: {threatLevel}</span>
       </div>
 
       <style jsx>{`

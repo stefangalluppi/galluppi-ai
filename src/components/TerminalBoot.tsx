@@ -100,12 +100,25 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     const container = containerRef.current;
     container.innerHTML = '';
 
+    const isReturning = d.visits > 1;
+    const scanningMsg = isReturning ? '[OK] SCANNING NETWORK... KNOWN SIGNATURE DETECTED' : '[OK] SCANNING NETWORK...';
+    const connectionMsg = isReturning ? '> RECONNECTION DETECTED' : '> CONNECTION DETECTED';
+    
+    let welcomeMsg = '> Welcome. You have my attention.';
+    if (d.visits === 2) {
+      welcomeMsg = '> Welcome back. I remember you.';
+    } else if (d.visits >= 3 && d.visits <= 5) {
+      welcomeMsg = `> You again. Visit #${d.visits}. This is becoming a habit.`;
+    } else if (d.visits > 5) {
+      welcomeMsg = `> Visit #${d.visits}. At this point, just bookmark it.`;
+    }
+
     const lines: string[] = [
       'GALLUPPI.AI v1.0 INITIALIZING...',
       '[OK] SYSTEMS ONLINE',
-      '[OK] SCANNING NETWORK...',
+      scanningMsg,
       '',
-      '> CONNECTION DETECTED',
+      connectionMsg,
       `> IP: ${d.ip}`,
       `> LOCATION: ${d.city}, ${d.region}, ${d.country}`,
       `> DEVICE: ${d.device} / ${d.os} / ${d.browser}`,
@@ -135,16 +148,15 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
     lines.push('');
     lines.push('> ██████████████████ IDENTIFIED');
     lines.push('');
-    lines.push('> Welcome. You have my attention.');
+    lines.push(welcomeMsg);
 
     const lineEls: HTMLDivElement[] = [];
-    lines.forEach(() => {
+    lines.forEach((line) => {
       const el = document.createElement('div');
       el.className = 'whitespace-pre text-sm md:text-base leading-relaxed';
-      el.style.color = '#00ff88';
+      el.style.color = '#e0e0e0';
       el.style.visibility = 'hidden';
       el.style.minHeight = '1.5em';
-      el.style.textShadow = '0 0 6px rgba(0,255,136,0.3)';
       container.appendChild(el);
       lineEls.push(el);
     });
@@ -179,11 +191,21 @@ export function TerminalBoot({ onComplete }: TerminalBootProps) {
       }
 
       let charIdx = 0;
-      el.textContent = '';
+      el.innerHTML = '';
 
       function typeChar() {
         if (charIdx < text.length) {
-          el.textContent += text[charIdx];
+          const currentText = text.substring(0, charIdx + 1);
+          
+          // Color [OK] in green, IDENTIFIED line in green
+          if (text.includes('[OK]')) {
+            el.innerHTML = currentText.replace(/\[OK\]/g, '<span style="color:#00ff88">[OK]</span>');
+          } else if (text.includes('IDENTIFIED')) {
+            el.innerHTML = `<span style="color:#00ff88">${currentText}</span>`;
+          } else {
+            el.textContent = currentText;
+          }
+          
           charIdx++;
           setTimeout(typeChar, CHAR_MS);
         } else {

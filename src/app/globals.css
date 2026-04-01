@@ -41,21 +41,9 @@ body {
   user-select: none;
 }
 
-.traffic-lights {
-  position: absolute;
-  left: 0.75rem;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.dot { width: 12px; height: 12px; border-radius: 50%; }
-.dot.red { background: #ff5f57; }
-.dot.yellow { background: #febc2e; }
-.dot.green { background: #28c840; }
-
 .title {
   font-size: 0.7rem;
-  color: #555;
+  color: #444;
   letter-spacing: 0.05em;
 }
 
@@ -108,6 +96,4 @@ body {
     border-radius: 0;
   }
   .terminal-body { height: calc(100vh - 2.5rem); }
-  .dot { width: 10px; height: 10px; }
-  .traffic-lights { gap: 0.4rem; }
 }

@@ -41,12 +41,7 @@ export default function Home() {
     <main className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-0 md:p-6">
       <div className="terminal-window w-full md:w-[92vw] h-screen md:h-[85vh]">
         <div className="title-bar">
-          <div className="traffic-lights">
-            <span className="dot red"></span>
-            <span className="dot yellow"></span>
-            <span className="dot green"></span>
-          </div>
-          <span className="title">galluppi.ai — terminal</span>
+          <span className="title">galluppi.ai</span>
         </div>
         <div className="terminal-body">
           {!bootComplete && (
