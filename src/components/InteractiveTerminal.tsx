@@ -1376,9 +1376,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         <span className="text-[#222]">│</span>
         <span>load {systemLoad.toFixed(2)}</span>
         <span className="text-[#222]">│</span>
-        <span>visitor #{visits}</span>
-        <span className="text-[#222]">│</span>
-        <span className="text-[#444]">threat: {threatLevel}</span>
+        <span>sessions {Math.floor(Math.random() * 3) + 2}</span>
       </div>
 
       <style jsx>{`
