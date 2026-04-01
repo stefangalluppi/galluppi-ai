@@ -83,7 +83,7 @@ const baseFilesystem: FileSystem = {
   },
   '/comms': {
     'contact.txt': { type: 'file', content: `EMAIL:    stefan@galluppi.ai\nGITHUB:   github.com/stefangalluppi\nLINKEDIN: linkedin.com/in/stefangalluppi\n\n> Encrypted channels preferred.` },
-    'pgp-key.pub': { type: 'file', content: `-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nmQINBGcF4VQBEAC7vM3T3xR4rgP6oJoKvFbh8zLO\n4XmSmKFQcMLMsLTv8dHRfGN3TjvEKP5JqoEq4a2r\nPZx5Gy3f1KxMIVhL9xOmKfE+rQ7e5+BFbWhjQiYH\nnTqFkR9acUwPxBqX0mYfBDH6J2dZyVanT4gUFNRe\n+/7bkVB8R5MfHTdfLJPIKVGMEVyDaa1PBnXBcNMw\nfbJENHxvYPCqq7kD3Vi9LzDjYGZNHRTMkxFJcq6v\nQEaGyvX3aVP8F+GbcCiImHE3HbG4QxoGRjKBXHMd\nPyeW1ESFkWu0HbBe7TQw4UrLBSYI6NOVFqChzp8Q\n[...truncated for display...]\n-----END PGP PUBLIC KEY BLOCK-----` },
+    'pgp-key.pub': { type: 'file', content: `-----BEGIN PGP PUBLIC KEY BLOCK-----\n\nmQINBGcF4VQBEAC7vM3T3xR4rgP6oJoKvFb\nh8zLO4XmSmKFQcMLMsLTv8dHRfGN3TjvEKP\n5JqoEq4a2rPZx5Gy3f1KxMIVhL9xOmKfE+r\nQ7e5+BFbWhjQiYHnTqFkR9acUwPxBqX0mYfB\nPassWordIs gilfoyleisalwaysright\nDH6J2dZyVanT4gUFNRe+/7bkVB8R5MfHTdf\nLJPIKVGMEVyDaa1PBnXBcNMwfbJENHxvYPCq\nq7kD3Vi9LzDjGZNHRTMkxFJcq6vQEaGyvX3\n\n-----END PGP PUBLIC KEY BLOCK-----` },
   },
   '/.classified': {
     'operation-atlas.enc': { type: 'file', content: 'ACCESS DENIED — CLEARANCE LEVEL 5 REQUIRED' },
@@ -692,6 +692,30 @@ Everything else is need-to-know. You don't need to know.\n`;
         break;
       }
 
+      case 'authenticate': {
+        const passphrase = args.join('').toLowerCase();
+        if (passphrase === 'gilfoyleisalwaysright') {
+          await typeOutput('> Verifying passphrase...\n', 2);
+          await new Promise(resolve => setTimeout(resolve, 800));
+          await typeOutput('> ██████████████████████ AUTHENTICATED\n', 1);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          await typeOutput('> Clearance Level 5 granted.\n', 2);
+          await new Promise(resolve => setTimeout(resolve, 600));
+          await typeOutput('>\n> Welcome to the other side.\n> Redirecting...\n', 2);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          // TODO: redirect to real site when ready
+          // window.location.href = '/portal';
+          await typeOutput('\n[SYSTEM] Portal is under construction. But you proved yourself.\n[SYSTEM] Access noted. You\'ll be the first to know when it\'s live.\n', 2);
+        } else if (args.length === 0) {
+          await typeOutput('authenticate: missing passphrase.\nYou\'ll need to find it first.\n', 2);
+        } else {
+          await typeOutput('> Verifying passphrase...\n', 2);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await typeOutput('> AUTHENTICATION FAILED.\n> Incorrect passphrase. Attempt logged.\n', 2);
+        }
+        break;
+      }
+
       case 'credits': {
         await typeOutput('Built by Bertram Gilfoyle.\nOperated by OpenClaw.\nFunded by leverage.\n\nhttps://github.com/stefangalluppi/galluppi-ai\n', 2);
         break;
@@ -1151,7 +1175,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
       const cmd = parts[0];
       
       if (parts.length <= 1) {
-        const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo','fortune','decrypt','traceroute','whois','status','about','contact','credits','uptime','time','grep','find','sl'];
+        const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo','fortune','decrypt','traceroute','whois','status','about','contact','credits','uptime','time','grep','find','sl','authenticate'];
         const matches = commands.filter(c => c.startsWith(cmd));
         if (matches.length === 1) {
           setInput(matches[0] + ' ');
