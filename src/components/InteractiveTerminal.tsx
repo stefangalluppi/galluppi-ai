@@ -131,7 +131,20 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     return { days, hours, minutes, formatted: `${days}d ${hours}h ${minutes}m` };
   }, []);
 
-  const getNeofetchOutput = useCallback(() => {
+  const getNeofetchInfo = useCallback(() => {
+    const u = getUptime();
+    return `
+  gilfoyle@galluppi.ai
+  ─────────────────────
+  OS:      GALLUPPI.AI v1.0
+  Agents:  11 active
+  Uptime:  ${u.formatted}
+  Shell:   galluppi-sh
+  CPU:     Neural Engine v4
+  Memory:  ∞\n`;
+  }, [getUptime]);
+
+  const getNeofetchFull = useCallback(() => {
     const u = getUptime();
     return ` ██████╗  █████╗ ██╗     ██╗     ██╗   ██╗██████╗ ██████╗ ██╗    █████╗ ██╗
 ██╔════╝ ██╔══██╗██║     ██║     ██║   ██║██╔══██╗██╔══██╗██║   ██╔══██╗██║
@@ -192,8 +205,8 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
 
     function typeNextLine() {
       if (lineIdx >= lines.length) {
-        // After ASCII art, show neofetch
-        const nfLines = getNeofetchOutput().split('\n');
+        // After ASCII art, show system info (no duplicate logo)
+        const nfLines = getNeofetchInfo().split('\n');
         let nfIdx = 0;
         function typeNeofetchLine() {
           if (nfIdx >= nfLines.length) {
@@ -214,7 +227,7 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     }
 
     typeNextLine();
-  }, [hasAnimatedIntro, asciiArt, getNeofetchOutput]);
+  }, [hasAnimatedIntro, asciiArt, getNeofetchInfo]);
 
   // Unlock archive for returning visitors
   useEffect(() => {
@@ -533,7 +546,7 @@ You tell me.\n`;
       }
 
       case 'clear': {
-        const nfLines = getNeofetchOutput().split('\n').map(line => ({ type: 'output' as const, content: line }));
+        const nfLines = getNeofetchFull().split('\n').map(line => ({ type: 'output' as const, content: line }));
         setOutput(nfLines);
         break;
       }
@@ -995,7 +1008,7 @@ Let that sink in.\n`, 2);
       }
 
       case 'neofetch': {
-        await typeOutput(getNeofetchOutput(), 1);
+        await typeOutput(getNeofetchFull(), 1);
         break;
       }
 
