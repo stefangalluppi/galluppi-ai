@@ -929,13 +929,14 @@ Let that sink in.\n`, 2);
 Nmap scan report for galluppi.ai (0.0.0.0)
 Host is up (0.00001s latency).
 
-PORT      STATE    SERVICE
-22/tcp    filtered ssh
-80/tcp    open     http
-443/tcp   open     https
-1337/tcp  open     unknown
-8080/tcp  filtered http-proxy
-9001/tcp  open     ai-orchestrator
+PORT       STATE    SERVICE
+22/tcp     closed   ssh (nice try)
+80/tcp     open     http
+443/tcp    open     https
+1337/tcp   open     classified
+31337/tcp  filtered elite-access
+8080/tcp   closed   not-for-you
+9001/tcp   open     its-over-9000
 
 Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         await typeOutput(nmapText, 2);
