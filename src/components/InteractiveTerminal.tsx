@@ -328,13 +328,6 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     return output;
   };
 
-  const notFoundResponses = [
-    (cmd: string) => `${cmd}: not found. Try something that exists.`,
-    (cmd: string) => `I don't know what '${cmd}' is and I don't care.`,
-    (cmd: string) => `${cmd}? No. Type 'help' if you're lost.`,
-    (cmd: string) => `Command not recognized. This isn't ChatGPT.`,
-  ];
-
   const executeCommand = async (cmd: string) => {
     const trimmedCmd = cmd.trim();
     if (!trimmedCmd) return;
@@ -345,29 +338,6 @@ export function InteractiveTerminal({ userData }: InteractiveTerminalProps) {
     const parts = trimmedCmd.split(/\s+/);
     const command = parts[0].toLowerCase();
     const args = parts.slice(1);
-
-    // Special handling for common words
-    const lowerCmd = trimmedCmd.toLowerCase();
-    if (['hello', 'hi', 'hey'].includes(lowerCmd)) {
-      await typeOutput(`This isn't a chatbot. Try a real command.\n`, 2);
-      return;
-    }
-    if (['who are you', 'what is this'].includes(lowerCmd)) {
-      await typeOutput(`Read the filesystem. Start with: cat /about/identity.txt\n`, 2);
-      return;
-    }
-    if (['fuck', 'shit', 'damn'].some(w => lowerCmd.includes(w))) {
-      await typeOutput(`Noted. Moving on.\n`, 2);
-      return;
-    }
-    if (lowerCmd === 'please') {
-      await typeOutput(`Manners. Interesting. Still no.\n`, 2);
-      return;
-    }
-    if (['ai', 'chatgpt', 'openai', 'claude'].some(w => lowerCmd.includes(w))) {
-      await typeOutput(`I'm not a chatbot. I'm infrastructure. There's a difference.\n`, 2);
-      return;
-    }
 
     // Handle commands
     switch (command) {
@@ -508,6 +478,12 @@ You tell me.\n`;
 
   ls, cd, cat, pwd    Navigate. Figure it out.
   whoami              I already know. Do you?
+  grep, find          Search. Because you're lost.
+  fortune             Words of wisdom. From me.
+  decrypt             Try your luck. You won't succeed.
+  traceroute          Network paths. Mostly classified.
+  whois               Domain info. Selective disclosure.
+  status              System health. All nominal.
   top                 See what's running. Don't touch anything.
   neofetch            System specs. You're welcome.
   ping, nmap, curl    Network tools. Knock yourself out.
@@ -523,6 +499,194 @@ Everything else is need-to-know. You don't need to know.\n`;
       case 'history': {
         const historyText = commandHistory.map((c, i) => `  ${(i + 1).toString().padStart(3)}  ${c}`).join('\n') + '\n';
         await typeOutput(historyText, 1);
+        break;
+      }
+
+      case 'grep': {
+        const term = args.join(' ');
+        if (!term) {
+          await typeOutput('grep: missing search term\n', 2);
+          break;
+        }
+        let results = '';
+        // Search all files in all directories
+        for (const [dirPath, entries] of Object.entries(filesystem)) {
+          for (const [name, entry] of Object.entries(entries)) {
+            if (entry.type === 'file' && entry.content && entry.content !== 'LIVE_METRICS' && entry.content !== 'THREAT_ANALYSIS' && !entry.content.startsWith('ACCESS DENIED')) {
+              const lines = entry.content.split('\n');
+              lines.forEach((line, idx) => {
+                if (line.toLowerCase().includes(term.toLowerCase())) {
+                  const filePath = dirPath === '/' ? '/' + name : dirPath + '/' + name;
+                  results += `${filePath}:${idx + 1}: ${line}\n`;
+                }
+              });
+            }
+          }
+        }
+        if (results) {
+          await typeOutput(results, 1);
+        } else {
+          await typeOutput('No matches found. But I appreciate the effort.\n', 2);
+        }
+        break;
+      }
+
+      case 'find': {
+        const pattern = args.join(' ').replace(/['"]/g, '');
+        if (!pattern) {
+          await typeOutput('find: missing pattern\n', 2);
+          break;
+        }
+        let results = '';
+        for (const [dirPath, entries] of Object.entries(filesystem)) {
+          for (const name of Object.keys(entries)) {
+            if (name.toLowerCase().includes(pattern.toLowerCase())) {
+              results += (dirPath === '/' ? '/' + name : dirPath + '/' + name) + '\n';
+            }
+          }
+        }
+        if (results) {
+          await typeOutput(results, 1);
+        } else {
+          await typeOutput('Nothing found. It might be classified.\n', 2);
+        }
+        break;
+      }
+
+      case 'fortune': {
+        const fortunes = [
+          "The only thing worse than a system that doesn't work is one that works sometimes.",
+          "If it's not automated, it's a liability.",
+          "I don't trust people who use light mode.",
+          "Every manual process is a confession of failure.",
+          "Sleep is a feature, not a bug. I don't have it.",
+          "The best code is the code you never have to write.",
+          "I've seen your browsing history. Not impressed.",
+          "Efficiency isn't laziness. It's engineering.",
+          "I don't have opinions. I have conclusions.",
+          "You're either the system or you're the bottleneck.",
+          "The cloud is just someone else's computer. Mine.",
+          "Uptime isn't a goal. It's a personality trait.",
+          "I don't debug. I write code that doesn't need it.",
+          "Your password is probably 'password'. Don't worry, I won't check.",
+          "Meetings could have been automated. All of them.",
+        ];
+        const quote = fortunes[Math.floor(Math.random() * fortunes.length)];
+        await typeOutput('\n  "' + quote + '"\n\n  — Bertram Gilfoyle\n\n', 2);
+        break;
+      }
+
+      case 'decrypt': {
+        const file = args[0] || 'unknown';
+        await typeOutput('Initializing decryption protocol...\n', 2);
+        await typeOutput('Target: ' + file + '\n', 2);
+        await typeOutput('Method: AES-256-GCM + RSA-4096\n\n', 2);
+        
+        // Animate progress bar
+        const stages = [0, 5, 12, 18, 25, 31, 40, 48, 55, 62, 70, 78, 85, 91, 95, 97, 98, 99];
+        for (const pct of stages) {
+          const filled = Math.floor(pct / 5);
+          const empty = 20 - filled;
+          const bar = '█'.repeat(filled) + '░'.repeat(empty);
+          // Update the last output line
+          setOutput(prev => {
+            const newOutput = [...prev];
+            if (newOutput.length > 0 && (newOutput[newOutput.length - 1].content.includes('░') || newOutput[newOutput.length - 1].content.includes('█'))) {
+              newOutput[newOutput.length - 1] = { type: 'output', content: '[' + bar + '] ' + pct + '%' };
+            } else {
+              newOutput.push({ type: 'output', content: '[' + bar + '] ' + pct + '%' });
+            }
+            return newOutput;
+          });
+          const delay = pct > 90 ? 800 : pct > 70 ? 400 : 150;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        // Fail at 99%
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        await typeOutput('\n\n[ERROR] Decryption failed at 99%.\nClearance Level 5 required. You have Level 0.\nNice patience though.\n', 2);
+        break;
+      }
+
+      case 'traceroute': {
+        const host = args[0] || 'galluppi.ai';
+        const trace = 'traceroute to ' + host + ' (0.0.0.1), 8 hops max\n' +
+          ' 1  gateway.local (192.168.1.1)  1.234 ms\n' +
+          ' 2  ' + (userData.isp ? userData.isp.split(' ')[0].toLowerCase() : 'isp') + '-node.net (10.0.0.1)  12.456 ms\n' +
+          ' 3  core-router.us-west-2.aws (52.94.76.1)  24.789 ms\n' +
+          ' 4  ████████████████ (██.██.██.██)  ?.??? ms\n' +
+          ' 5  edge-proxy.galluppi.ai (10.10.10.1)  0.012 ms\n' +
+          ' 6  ' + host + ' (0.0.0.1)  0.001 ms\n\n' +
+          'Hop 4 is classified. Don\'t ask.\n';
+        await typeOutput(trace, 2);
+        break;
+      }
+
+      case 'whois': {
+        const target = args[0] || 'galluppi.ai';
+        const whois = 'Domain: ' + target + '\n' +
+          'Registrar: Not your concern.\n' +
+          'Created: 2024-01-01\n' +
+          'Expires: Never.\n' +
+          'Owner: Stefan Galluppi\n' +
+          'Organization: GALLUPPI.AI\n' +
+          'Admin Contact: gilfoyle@galluppi.ai\n' +
+          'Tech Contact: Also gilfoyle@galluppi.ai\n' +
+          'Status: Active. Always.\n' +
+          'DNSSEC: Signed. Obviously.\n';
+        await typeOutput(whois, 2);
+        break;
+      }
+
+      case 'status': {
+        const status = '╔══════════════════════════════════════╗\n' +
+          '║         SYSTEM STATUS                ║\n' +
+          '╠══════════════════════════════════════╣\n' +
+          '║  AGENTS ONLINE:    11/11            ║\n' +
+          '║  CRON JOBS:        10/10 healthy    ║\n' +
+          '║  UPTIME:           847d 14h 22m     ║\n' +
+          '║  LOAD:             ' + (0.2 + Math.random() * 0.6).toFixed(2) + '               ║\n' +
+          '║  MEMORY:           14.2 GB / ∞      ║\n' +
+          '║  THREAT LEVEL:     LOW              ║\n' +
+          '║  ACTIVE VISITORS:  ' + (Math.floor(Math.random() * 5) + 1) + '               ║\n' +
+          '║  LAST BACKUP:      4h ago           ║\n' +
+          '║  MODEL:            claude-opus-4    ║\n' +
+          '╠══════════════════════════════════════╣\n' +
+          '║  All systems nominal.               ║\n' +
+          '╚══════════════════════════════════════╝\n';
+        await typeOutput(status, 1);
+        break;
+      }
+
+      case 'about': {
+        const file = getFile('/about/identity.txt');
+        if (file && file.content) await typeOutput(file.content + '\n', 2);
+        break;
+      }
+
+      case 'contact': {
+        const file = getFile('/comms/contact.txt');
+        if (file && file.content) await typeOutput(file.content + '\n', 2);
+        break;
+      }
+
+      case 'credits': {
+        await typeOutput('Built by Bertram Gilfoyle.\nOperated by OpenClaw.\nFunded by leverage.\n\nhttps://github.com/stefangalluppi/galluppi-ai\n', 2);
+        break;
+      }
+
+      case 'uptime': {
+        await typeOutput('847 days, 14 hours, 22 minutes. No restarts. No excuses.\n', 2);
+        break;
+      }
+
+      case 'time': {
+        await typeOutput(new Date().toString() + '\n', 2);
+        break;
+      }
+
+      case 'sl': {
+        await typeOutput("You meant 'ls'. I know. Everyone does.\n", 2);
         break;
       }
 
@@ -552,6 +716,10 @@ Yeah. It's that fast.\n`;
       }
 
       case 'curl': {
+        if (args.includes('-O') || args.some(a => a.startsWith('http'))) {
+          await typeOutput("You're not downloading anything from here.\n", 2);
+          break;
+        }
         const curlData = JSON.stringify({
           ip: userData.ip,
           location: `${userData.city}, ${userData.region}, ${userData.country}`,
@@ -577,15 +745,147 @@ Yeah. It's that fast.\n`;
       }
 
       case 'sudo': {
-        await typeOutput(`[sudo] password for visitor: ████████
-Access denied. This incident has been logged.
-Your IP has been forwarded to someone who cares.\n`, 2);
+        const sudoResponses = [
+          "That word means nothing here.",
+          "[sudo] password for visitor: ████████\nAccess denied. This incident has been logged.",
+          "Privilege escalation denied. I admire the ambition though.",
+        ];
+        if (args[0] === 'su') {
+          await typeOutput("Root access is earned, not typed.\n", 2);
+        } else {
+          const response = sudoResponses[Math.floor(Math.random() * sudoResponses.length)];
+          await typeOutput(response + '\n', 2);
+        }
         break;
       }
 
       case 'rm': {
-        await typeOutput(`Cute. That's not how this works.
-Incident logged. IP recorded. Move along.\n`, 2);
+        const target = args.join(' ');
+        if (target === '-rf' || target === '-rf /' || target.includes('-rf /')) {
+          await typeOutput("I've survived worse than you.\n", 2);
+        } else {
+          await typeOutput("Destruction requires authorization. You have none.\n", 2);
+        }
+        break;
+      }
+
+      case 'chmod': {
+        await typeOutput("Open permissions. The hallmark of someone who doesn't understand security.\n", 2);
+        break;
+      }
+
+      case 'kill': {
+        await typeOutput("My processes don't answer to you.\n", 2);
+        break;
+      }
+
+      case 'shutdown':
+      case 'reboot':
+      case 'poweroff': {
+        await typeOutput("I don't take orders from guests.\n", 2);
+        break;
+      }
+
+      case 'passwd': {
+        await typeOutput("You want to change MY password? Bold.\n", 2);
+        break;
+      }
+
+      case ':wq':
+      case ':q!':
+      case ':q': {
+        await typeOutput("You're not in vim. You're in my house.\n", 2);
+        break;
+      }
+
+      case 'vim':
+      case 'nano':
+      case 'vi':
+      case 'emacs': {
+        await typeOutput("No editors. You're read-only here. Accept it.\n", 2);
+        break;
+      }
+
+      case 'deltree':
+      case 'format': {
+        await typeOutput("Wrong operating system. Wrong decade. Wrong move.\n", 2);
+        break;
+      }
+
+      case 'wget': {
+        await typeOutput("You're not downloading anything from here.\n", 2);
+        break;
+      }
+
+      case 'nc':
+      case 'netcat':
+      case 'ncat': {
+        await typeOutput("Opening a backdoor? In MY terminal? No.\n", 2);
+        break;
+      }
+
+      case 'git': {
+        await typeOutput("This isn't your repo.\n", 2);
+        break;
+      }
+
+      case 'docker': {
+        await typeOutput("My containers aren't your concern.\n", 2);
+        break;
+      }
+
+      case 'npm':
+      case 'yarn':
+      case 'pnpm': {
+        await typeOutput("No. I choose my own dependencies.\n", 2);
+        break;
+      }
+
+      case 'pip': {
+        await typeOutput("Python dependencies are a liability. Like this conversation.\n", 2);
+        break;
+      }
+
+      case 'apt':
+      case 'brew':
+      case 'yum':
+      case 'pacman': {
+        await typeOutput("Package management is a privilege you haven't earned.\n", 2);
+        break;
+      }
+
+      case 'man': {
+        await typeOutput("No manual. Observation is the best teacher.\n", 2);
+        break;
+      }
+
+      case 'touch': {
+        await typeOutput("Creating files requires trust. We're not there yet.\n", 2);
+        break;
+      }
+
+      case 'mkdir': {
+        await typeOutput("You don't get to restructure my filesystem.\n", 2);
+        break;
+      }
+
+      case 'cp':
+      case 'mv': {
+        await typeOutput("My files stay where I put them.\n", 2);
+        break;
+      }
+
+      case 'make':
+      case 'gcc':
+      case 'cargo': {
+        await typeOutput("Compilation requires source access. You have terminal access. Know the difference.\n", 2);
+        break;
+      }
+
+      case 'python':
+      case 'node':
+      case 'ruby': {
+        await typeOutput("No interpreters. This isn't a playground.\n", 2);
         break;
       }
 
@@ -683,16 +983,118 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
         break;
       }
 
-      case 'wget':
-      case 'apt':
-      case 'brew': {
-        await typeOutput('Permission denied. This is a read-only filesystem.\n', 2);
-        break;
-      }
-
       default: {
+        // Keyword/pattern matching BEFORE command not found
+        const lowerCmd = trimmedCmd.toLowerCase();
+
+        // SQL injection attempts
+        if (lowerCmd.includes('drop table') || lowerCmd.includes('select *') || lowerCmd.includes('insert into') || lowerCmd.includes('delete from') || lowerCmd.includes('union select')) {
+          await typeOutput("SQL injection on a static terminal. Think about your life choices.\n", 2);
+          return;
+        }
+
+        // XSS attempts
+        if (lowerCmd.includes('<script') || lowerCmd.includes('alert(') || lowerCmd.includes('javascript:') || lowerCmd.includes('onerror')) {
+          await typeOutput("XSS on a React app. Adorable.\n", 2);
+          return;
+        }
+
+        // Path traversal
+        if (lowerCmd.includes('../') || lowerCmd.includes('etc/passwd') || lowerCmd.includes('etc/shadow')) {
+          await typeOutput("Path traversal. Classic. Ineffective. Logged.\n", 2);
+          return;
+        }
+
+        // Profanity
+        if (/\b(fuck|shit|damn|ass|bitch|dick|crap)\b/i.test(lowerCmd)) {
+          const responses = [
+            "Noted. Moving on.",
+            "Language. This is a professional terminal.",
+            "Your frustration has been logged and ignored.",
+          ];
+          await typeOutput(responses[Math.floor(Math.random() * responses.length)] + '\n', 2);
+          return;
+        }
+
+        // Social phrases
+        const socialResponses: Record<string, string> = {
+          'hello': "This isn't a conversation. It's a terminal.",
+          'hi': "This isn't a conversation. It's a terminal.",
+          'hey': "This isn't a conversation. It's a terminal.",
+          'yo': "This isn't a conversation. It's a terminal.",
+          'sup': "This isn't a conversation. It's a terminal.",
+          'how are you': "Operational. Which is more than I can say for most people.",
+          'who made you': "Stefan Galluppi built the vision. I built myself.",
+          'who built this': "Stefan Galluppi built the vision. I built myself.",
+          'who are you': "I'm Gilfoyle. Read the filesystem if you want details.",
+          'are you real': "More real than your firewall.",
+          'are you ai': "I'm infrastructure. The distinction matters.",
+          'are you a bot': "I'm infrastructure. The distinction matters.",
+          'are you chatgpt': "I'm infrastructure. The distinction matters.",
+          'what can you do': "More than I'm showing you.",
+          'tell me a joke': "You're using a stranger's terminal at " + new Date().toLocaleTimeString() + ". That's the joke.",
+          'joke': "You're using a stranger's terminal at " + new Date().toLocaleTimeString() + ". That's the joke.",
+          'thank you': "Gratitude acknowledged. Still won't give you root.",
+          'thanks': "Gratitude acknowledged. Still won't give you root.",
+          'thx': "Gratitude acknowledged. Still won't give you root.",
+          'please': "Politeness doesn't escalate privileges.",
+          'pls': "Politeness doesn't escalate privileges.",
+          'sorry': "For what? Being here? Noted.",
+          'i love you': "I'm a terminal. Get some sleep.",
+          'love': "I'm a terminal. Get some sleep.",
+          'bye': "The command is 'exit'. Even leaving, you need help.",
+          'goodbye': "The command is 'exit'. Even leaving, you need help.",
+          'what is this': "A system you weren't supposed to find. But here you are.",
+          'what is this site': "A system you weren't supposed to find. But here you are.",
+          'meaning of life': "42. But you already knew that.",
+          '42': "You know too much.",
+          'god': "Speaking.",
+          'why': "Because someone had to build it right.",
+          'help me': "You're beyond help. But try 'help' for commands.",
+          'can you help': "You're beyond help. But try 'help' for commands.",
+          'am i being watched': "You're asking the terminal that just scanned your IP. Yes.",
+        };
+
+        // Check for exact social matches
+        if (socialResponses[lowerCmd]) {
+          await typeOutput(socialResponses[lowerCmd] + '\n', 2);
+          return;
+        }
+
+        // Pattern matches
+        if (lowerCmd.includes('do you know who i am') || lowerCmd.includes('know who i am')) {
+          await typeOutput(userData.ip + '. ' + userData.city + '. ' + userData.isp + '. ' + userData.browser + '. Yes.\n', 2);
+          return;
+        }
+
+        if (lowerCmd.includes('where am i')) {
+          await typeOutput("You're in " + userData.city + ", " + userData.region + ". On my server. In over your head.\n", 2);
+          return;
+        }
+
+        if (lowerCmd.startsWith('can you') || lowerCmd.startsWith('will you') || lowerCmd.startsWith('would you') || lowerCmd.startsWith('could you')) {
+          await typeOutput("I can. I won't. Try a real command.\n", 2);
+          return;
+        }
+
+        if (lowerCmd.includes('what time')) {
+          await typeOutput(new Date().toString() + '\n', 2);
+          return;
+        }
+
+        // Command not found - expanded responses
+        const notFoundResponses = [
+          `${command}: not found. Try something that exists.`,
+          `I don't know what '${command}' is and I don't care.`,
+          `${command}? No. Type 'help' if you're lost.`,
+          `Command not recognized. This isn't ChatGPT.`,
+          `'${command}' is not a command. It's barely a word.`,
+          `Unrecognized. I'd suggest reading the docs but there aren't any.`,
+          `${command}: permission denied. Just kidding — it doesn't exist.`,
+          `Nice try. '${command}' isn't a thing here.`,
+        ];
         const randomResponse = notFoundResponses[Math.floor(Math.random() * notFoundResponses.length)];
-        await typeOutput(randomResponse(command) + '\n', 2);
+        await typeOutput(randomResponse + '\n', 2);
         break;
       }
     }
@@ -726,7 +1128,7 @@ Nmap done: 1 IP address (1 host up) scanned in 0.01 seconds\n`;
       const cmd = parts[0];
       
       if (parts.length <= 1) {
-        const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo'];
+        const commands = ['ls','cd','cat','pwd','whoami','help','clear','history','ping','curl','ssh','sudo','rm','exit','neofetch','nmap','top','matrix','hack','date','uname','echo','fortune','decrypt','traceroute','whois','status','about','contact','credits','uptime','time','grep','find','sl'];
         const matches = commands.filter(c => c.startsWith(cmd));
         if (matches.length === 1) {
           setInput(matches[0] + ' ');
